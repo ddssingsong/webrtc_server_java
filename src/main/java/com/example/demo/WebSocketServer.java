@@ -9,13 +9,14 @@ import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@ServerEndpoint("/websocket") // 客户端URI访问的路径
+@ServerEndpoint("/ws/{userId}") // 客户端URI访问的路径
 @Component
 public class WebSocketServer {
 
@@ -28,10 +29,10 @@ public class WebSocketServer {
     private Session session;
 
     @OnOpen
-    public void onOpen(Session session) {
+    public void onOpen(Session session, @PathParam("userId") String userId) {
         this.session = session;
 
-        System.out.println(session.getId() + ":建立连接");
+        System.out.println(session.getId() + ":建立连接:" + userId);
         // 添加socket
         addSocket(session);
     }
@@ -40,7 +41,7 @@ public class WebSocketServer {
     public void onClose() {
         Session session = this.session;
         String room = roomList.get(session.getId());
-        CopyOnWriteArrayList<Session> curRoom;//= this.roomList.get(room);//获取对应房间的列表
+        CopyOnWriteArrayList<Session> curRoom;
         if (room != null) {
             curRoom = rooms.get(room);//获取对应房间的列表
             for (Session aCurRoom : curRoom) {
