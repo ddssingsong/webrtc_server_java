@@ -5,11 +5,13 @@
 
 Android访问地址为ws://ip:port/websocket
 
+## 分支-master
 
+可以运行的demo
 
-## 信令设计
+## 分支-dev
 
- 
+**信令设计**
 
 1. 登录成功，返回个人信息，用来显示用户的在线状态
 
@@ -29,11 +31,11 @@ Android访问地址为ws://ip:port/websocket
 
    ```json
    # 服务器负责转发
-   {
-       	"eventName":"__invite",
-      	 	"data":{
-       		"inviteId":"userId",
-               "userList":"userId,usrId,userId"  #逗号分割
+   {		
+     "eventName":"__invite",
+      	"data":{
+       	"inviteId":"userId",
+           "userList":"userId,usrId,userId"  #逗号分割
        }
    }
    ```
