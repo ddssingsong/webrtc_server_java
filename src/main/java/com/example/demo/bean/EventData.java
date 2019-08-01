@@ -2,9 +2,9 @@ package com.example.demo.bean;
 
 import java.util.Map;
 
-public class Data {
-    String eventName;
-    Map<String, Object> data;
+public class EventData {
+    private String eventName;
+    private Map<String, Object> data;
 
     public String getEventName() {
         return eventName;
