@@ -6,11 +6,6 @@
 Android访问地址为ws://ip:port/websocket
 
 ## 分支-master
-## 分支-matser 
-
-
-## 分支-dev
-
 可以运行的demo
 
 ## 分支-dev
@@ -37,8 +32,11 @@ Android访问地址为ws://ip:port/websocket
    # 服务器负责转发
    {		
      "eventName":"__invite",
-      	"data":{
-       	"inviteId":"userId",
+     "data":{
+           "room":"room",
+           "roomSize":9,
+           "mediaType":0/1,  // 0 视频 1 语音
+       	"inviteID":"userId",
            "userList":"userId,usrId,userId"  #逗号分割
        }
    }
@@ -53,10 +51,22 @@ Android访问地址为ws://ip:port/websocket
 3. 对方已响铃
 
    ```json
-   
+   {
+       "eventName":"__ring",
+    "data":{
+           "inviteID":"userId",
+           "fromID":"myId"
+       }
+   }
    ```
+   
+   
+
+4. 加入房间
 
    
+
+
 
 
 

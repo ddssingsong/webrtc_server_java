@@ -3,22 +3,31 @@ package com.example.demo.bean;
 import javax.websocket.Session;
 
 public class UserBean {
-    private Session session;
+
+
+    private DeviceSession[] sessions = new DeviceSession[2];
     private String userId;
     private String avatar;
 
-    public UserBean(Session session, String userId, String avatar) {
-        this.session = session;
+    public UserBean(String userId, String avatar) {
         this.userId = userId;
         this.avatar = avatar;
     }
 
-    public Session getSession() {
-        return session;
+    public void setPhoneSession(Session session, int device) {
+        this.sessions[0] = new DeviceSession(session, device);
     }
 
-    public void setSession(Session session) {
-        this.session = session;
+    public void setPcSession(Session session, int device) {
+        this.sessions[1] = new DeviceSession(session, device);
+    }
+
+    public Session getPhoneSession() {
+        return sessions[0].getSession();
+    }
+
+    public Session getPcSession() {
+        return sessions[1].getSession();
     }
 
     public String getUserId() {
@@ -50,6 +59,15 @@ public class UserBean {
             return false;
         }
         UserBean user = (UserBean) obj;
-        return this.userId.equals(user.getUserId()) && this.session.getId().equals(user.getSession().getId());
+        return this.userId.equals(user.getUserId());
+    }
+
+
+    public DeviceSession[] getSessions() {
+        return sessions;
+    }
+
+    public void setSessions(DeviceSession[] sessions) {
+        this.sessions = sessions;
     }
 }
