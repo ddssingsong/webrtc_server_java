@@ -5,6 +5,10 @@
 
 Android访问地址为ws://ip:port/websocket
 
+## 分支-matser 
+
+
+## 分支-dev
 
 
 ## 信令设计
@@ -36,7 +40,13 @@ Android访问地址为ws://ip:port/websocket
                "userList":"userId,usrId,userId"  #逗号分割
        }
    }
+   
+   1. 创建房间
+   2. 发送邀请
+   3.
    ```
+
+   
 
 3. 对方已响铃
 
