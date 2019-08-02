@@ -25,7 +25,7 @@ public class WebSocketServer {
 
 
     // 在线房间表
-    private static ConcurrentHashMap<String, ConcurrentHashMap<String, UserBean>> rooms = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, CopyOnWriteArrayList<UserBean>> rooms = new ConcurrentHashMap<>();
 
     // 在线用户表
     private static ConcurrentHashMap<String, UserBean> userBeans = new ConcurrentHashMap<>();
@@ -86,6 +86,9 @@ public class WebSocketServer {
             case "__invite":
                 invite(message, data.getData(), session);
                 break;
+            case "__ring":
+                ring();
+                break;
             case "__join":
                 join(data.getData(), session);
                 break;
@@ -104,58 +107,68 @@ public class WebSocketServer {
 
     }
 
+
+    // 首次邀请
     private void invite(String message, Map<String, Object> data, Session session) {
         String userList = (String) data.get("userList");
         String[] users = userList.split(",");
+        CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
         for (String user : users) {
             // 根据userId获取sessionId
             UserBean userBean = userBeans.get(user);
             // 给需要发送的人发送消息
-            userBean.getSession().getAsyncRemote().sendText(message);
+            if (userBean != null) {
+                copy.add(userBean);
+                userBean.getSession().getAsyncRemote().sendText(message);
+            }
+
         }
 
     }
 
+    private void ring() {
+
+    }
 
     private void join(Map<String, Object> data, Session socket) {
         //获得房间号
-//        String room = data.get("room") == null ? "__default" : data.get("room").toString();
-//        CopyOnWriteArrayList<String> ids = new CopyOnWriteArrayList<>();//存储sessionId
-//        CopyOnWriteArrayList<Session> curRoom = rooms.get(room);//获取对应房间的列表
-//        if (curRoom == null) {
-//            curRoom = new CopyOnWriteArrayList<>();
-//        }
-//        Session curSocket;
-//        //当前房间是否有加入的socket
-//        for (int i = 0; i < curRoom.size(); i++) {
-//            curSocket = curRoom.get(i);
-//            if (socket.getId().equals(curSocket.getId())) {
-//                continue;
-//            }
-//            ids.add(curSocket.getId());
-//            EventData send = new EventData();
-//            send.setEventName("_new_peer");
-//            Map<String, Object> map = new HashMap<>();
-//            map.put("socketId", socket.getId());
-//            send.setData(map);
-//            curSocket.getAsyncRemote().sendText(gson.toJson(send));
-//        }
-//
-//        curRoom.add(socket);
-//        roomList.put(session.getId(), room);
-//        rooms.put(room, curRoom);
-//
-//        EventData send = new EventData();
-//        send.setEventName("_peers");
-//        Map<String, Object> map = new HashMap<>();
-//        String[] connections = new String[ids.size()];
-//        ids.toArray(connections);
-//        map.put("connections", connections);
-//        map.put("you", socket.getId());
-//        send.setData(map);
-//        socket.getAsyncRemote().sendText(gson.toJson(send));
-//
-//        System.out.println("新用户" + socket.getId() + "加入房间" + room);
+        String room = data.get("room") == null ? "__default" : data.get("room").toString();
+        CopyOnWriteArrayList<String> ids = new CopyOnWriteArrayList<>();//存储sessionId
+        CopyOnWriteArrayList<Session> curRoom = rooms.get(room);//获取对应房间的列表
+        if (curRoom == null) {
+            curRoom = new CopyOnWriteArrayList<>();
+        }
+        Session curSocket;
+        //当前房间是否有加入的socket
+        for (int i = 0; i < curRoom.size(); i++) {
+            curSocket = curRoom.get(i);
+            if (socket.getId().equals(curSocket.getId())) {
+                continue;
+            }
+            ids.add(curSocket.getId());
+            EventData send = new EventData();
+            send.setEventName("_new_peer");
+            Map<String, Object> map = new HashMap<>();
+            map.put("socketId", socket.getId());
+            send.setData(map);
+            curSocket.getAsyncRemote().sendText(gson.toJson(send));
+        }
+
+        curRoom.add(socket);
+        roomList.put(session.getId(), room);
+        rooms.put(room, curRoom);
+
+        EventData send = new EventData();
+        send.setEventName("_peers");
+        Map<String, Object> map = new HashMap<>();
+        String[] connections = new String[ids.size()];
+        ids.toArray(connections);
+        map.put("connections", connections);
+        map.put("you", socket.getId());
+        send.setData(map);
+        socket.getAsyncRemote().sendText(gson.toJson(send));
+
+        System.out.println("新用户" + socket.getId() + "加入房间" + room);
     }
 
     private void iceCandidate(Map<String, Object> data, Session socket) {
