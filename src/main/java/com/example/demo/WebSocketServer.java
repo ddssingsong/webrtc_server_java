@@ -7,6 +7,8 @@ import com.example.demo.bean.RoomInfo;
 import com.example.demo.bean.UserBean;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.OnClose;
@@ -15,6 +17,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @ServerEndpoint("/ws/{userId}/{device}")
 @Component
 public class WebSocketServer {
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketServer.class);
 
     private Session session;
     private String userId;
@@ -43,21 +47,21 @@ public class WebSocketServer {
         }
         if (device == 0) {
             userBean.setPhoneSession(session, device);
-            System.out.println("Phone用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
+            LOG.info("Phone用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
         } else {
             userBean.setPcSession(session, device);
-            System.out.println("PC用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
+            LOG.info("PC用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
         }
         this.device = device;
         this.session = session;
         this.userId = userId;
 
         //加入列表
-        MemCons.userBeans.put(this.userId, userBean);
+        MemCons.userBeans.put(userId, userBean);
 
         // 登陆成功，返回个人信息
         EventData send = new EventData();
-        send.setEventName("_login_success");
+        send.setEventName("__login_success");
         Map<String, Object> map = new HashMap<>();
         map.put("userID", userId);
         map.put("avatar", avatar);
@@ -70,23 +74,38 @@ public class WebSocketServer {
     // 用户下线
     @OnClose
     public void onClose() {
+        System.out.println("onClose......");
         // 根据用户名查出房间,
         UserBean userBean = MemCons.userBeans.get(userId);
-        DeviceSession[] sessions = userBean.getSessions();
-        if (device == 0) {
-            sessions[0] = null;
-            userBean.setSessions(sessions);
-            MemCons.userBeans.put(userId, userBean);
-            System.out.println("Phone用户离开:" + userBean.getUserId());
-        } else {
-            sessions[1] = null;
-            userBean.setSessions(sessions);
-            MemCons.userBeans.put(userId, userBean);
-            System.out.println("PC用户离开:" + userBean.getUserId());
+        if (userBean != null) {
+            DeviceSession[] sessions = userBean.getSessions();
+            if (device == 0) {
+                try {
+                    sessions[0].getSession().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                sessions[0] = null;
+                userBean.setSessions(sessions);
+                MemCons.userBeans.put(userId, userBean);
+                LOG.info("Phone用户离开:" + userBean.getUserId());
+            } else {
+
+                try {
+                    sessions[1].getSession().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                sessions[1] = null;
+                userBean.setSessions(sessions);
+                MemCons.userBeans.put(userId, userBean);
+                LOG.info("PC用户离开:" + userBean.getUserId());
+            }
+            if (sessions[0] == null && sessions[1] == null) {
+                MemCons.userBeans.remove(userId);
+            }
         }
-        if (sessions[0] == null && sessions[1] == null) {
-            MemCons.userBeans.remove(userId);
-        }
+
 
     }
 
