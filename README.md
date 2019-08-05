@@ -53,7 +53,7 @@ Android访问地址为ws://ip:port/websocket
    ```json
    {
        "eventName":"__ring",
-    "data":{
+       "data":{
            "inviteID":"userId",
            "fromID":"myId"
        }
@@ -63,6 +63,31 @@ Android访问地址为ws://ip:port/websocket
    
 
 4. 加入房间
+
+  ```
+  
+  ```
+  
+  
+  
+  
+  
+  
+  
+  
+  
+5. 拒绝接听
+
+    ```json
+   {
+       "eventName":"__reject",
+       "data":{
+           "inviteID":"userId",
+           "fromID":"myId",
+           "rejectType":"0/1"   //0 拒绝  1 busy  
+       }
+   }
+    ```
 
    
 

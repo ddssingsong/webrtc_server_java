@@ -3,8 +3,6 @@ package com.example.demo.bean;
 import javax.websocket.Session;
 
 public class UserBean {
-
-
     private DeviceSession[] sessions = new DeviceSession[2];
     private String userId;
     private String avatar;

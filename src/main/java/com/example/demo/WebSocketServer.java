@@ -131,8 +131,11 @@ public class WebSocketServer {
             case "__ring":
                 ring(message, data.getData());
                 break;
+            case "__reject":
+                reject(message, data.getData());
+                break;
             case "__join":
-                join(data.getData(), session);
+                join(message, data.getData(), session);
                 break;
             case "__ice_candidate":
                 iceCandidate(data.getData(), session);
@@ -152,10 +155,6 @@ public class WebSocketServer {
 
     // 首次邀请
     private void invite(String message, Map<String, Object> data) {
-
-        // 先看下自己另一端是否正在通话中
-
-
         String userList = (String) data.get("userList");
         String[] users = userList.split(",");
         String inviteId = (String) data.get("inviteID");
@@ -188,54 +187,66 @@ public class WebSocketServer {
 
     // 响铃回复
     private void ring(String message, Map<String, Object> data) {
-//        // 解析出inviteID
-//        String inviteId = (String) data.get("inviteID");
-//        UserBean userBean = userBeans.get(inviteId);
-//        if (userBean != null) {
-//            userBean.getSession().getAsyncRemote().sendText(message);
-//        }
+        String inviteId = (String) data.get("inviteID");
+        UserBean userBean = MemCons.userBeans.get(inviteId);
+        if (userBean != null) {
+            sendMsg(userBean, -1, message);
+        }
     }
 
 
-    private void join(Map<String, Object> data, Session socket) {
-        //获得房间号
-//        String room = data.get("room") == null ? "__default" : data.get("room").toString();
-//        CopyOnWriteArrayList<String> ids = new CopyOnWriteArrayList<>();
-//        CopyOnWriteArrayList<Session> curRoom = rooms.get(room);//获取对应房间的列表
-//        if (curRoom == null) {
-//            curRoom = new CopyOnWriteArrayList<>();
-//        }
-//        Session curSocket;
-//        //当前房间是否有加入的socket
-//        for (int i = 0; i < curRoom.size(); i++) {
-//            curSocket = curRoom.get(i);
-//            if (socket.getId().equals(curSocket.getId())) {
-//                continue;
-//            }
-//            ids.add(curSocket.getId());
-//            EventData send = new EventData();
-//            send.setEventName("_new_peer");
-//            Map<String, Object> map = new HashMap<>();
-//            map.put("socketId", socket.getId());
-//            send.setData(map);
-//            curSocket.getAsyncRemote().sendText(gson.toJson(send));
-//        }
-//
-//        curRoom.add(socket);
-//        roomList.put(session.getId(), room);
-//        rooms.put(room, curRoom);
-//
-//        EventData send = new EventData();
-//        send.setEventName("_peers");
-//        Map<String, Object> map = new HashMap<>();
-//        String[] connections = new String[ids.size()];
-//        ids.toArray(connections);
-//        map.put("connections", connections);
-//        map.put("you", socket.getId());
-//        send.setData(map);
-//        socket.getAsyncRemote().sendText(gson.toJson(send));
-//
-//        System.out.println("新用户" + socket.getId() + "加入房间" + room);
+    //拒绝接听
+    private void reject(String message, Map<String, Object> data) {
+        String inviteId = (String) data.get("inviteID");
+        UserBean userBean = MemCons.userBeans.get(inviteId);
+        if (userBean != null) {
+            sendMsg(userBean, -1, message);
+        }
+    }
+
+    // 同意接听
+    private void join(String message, Map<String, Object> data, Session session) {
+
+        String room = (String) data.get("room");
+        String userID = (String) data.get("userID");
+
+        RoomInfo roomInfo = MemCons.rooms.get(room);
+        CopyOnWriteArrayList<UserBean> roomUserBeans = roomInfo.getUserBeans();
+        UserBean my = MemCons.userBeans.get(userID);
+
+
+        // 1. 將我加入到房间
+        roomUserBeans.add(my);
+        roomInfo.setUserBeans(roomUserBeans);
+        MemCons.rooms.put(room, roomInfo);
+
+        // 2. 返回房间里的所有人信息
+        EventData send = new EventData();
+        send.setEventName("__peers");
+        Map<String, Object> map = new HashMap<>();
+        String[] cons = new String[roomUserBeans.size()];
+        for (int i = 0; i < roomUserBeans.size(); i++) {
+            UserBean userBean = roomUserBeans.get(i);
+            if (userBean.getUserId().equals(userID)) {
+                continue;
+            }
+            cons[i] = userBean.getUserId();
+        }
+        map.put("connections", cons);
+        map.put("you", session.getId());
+        send.setData(map);
+        sendMsg(my, -1, gson.toJson(send));
+
+
+        // 3. 给房间里的其他人发送消息
+        for (UserBean userBean : roomUserBeans) {
+            if (userBean.getUserId().equals(userID)) {
+                continue;
+            }
+            sendMsg(userBean, -1, message);
+        }
+
+
     }
 
     private void iceCandidate(Map<String, Object> data, Session socket) {
@@ -291,6 +302,7 @@ public class WebSocketServer {
     }
 
 
+    // 给不同设备发送消息
     private void sendMsg(UserBean userBean, int device, String str) {
         if (device == 0) {
             Session phoneSession = userBean.getPhoneSession();
