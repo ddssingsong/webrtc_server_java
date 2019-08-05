@@ -34,8 +34,8 @@ Android访问地址为ws://ip:port/websocket
      "eventName":"__invite",
      "data":{
            "room":"room",
-           "roomSize":9,
-           "mediaType":0/1,  // 0 视频 1 语音
+           "roomSize":"9",
+           "mediaType":"1",  // 0 视频 1 语音
        	"inviteID":"userId",
            "userList":"userId,usrId,userId"  #逗号分割
        }
@@ -48,7 +48,22 @@ Android访问地址为ws://ip:port/websocket
 
    
 
-3. 对方已响铃
+3. 取消拨出
+
+   ```
+   在拨打的过程中取消邀请
+   {
+       "eventName":"__cancel",
+       "data":{
+           "inviteID":"userId",
+           "userList":"userId,usrId,userId" 
+       }
+   }
+   ```
+
+   
+
+4. 对方已响铃
 
    ```json
    {
@@ -59,10 +74,10 @@ Android访问地址为ws://ip:port/websocket
        }
    }
    ```
-   
+
    
 
-4. 加入房间
+5. 加入房间
 
   ```json
   {
@@ -73,6 +88,7 @@ Android访问地址为ws://ip:port/websocket
       }
   }
   
+  返回信息
   {
       "eventName":"__peers",
       "data":{
@@ -83,18 +99,12 @@ Android访问地址为ws://ip:port/websocket
   
   
   ```
-  
-  
-  
-  
-  
-  
-  
-  
-  
-5. 拒绝接听
 
-    ```json
+  
+
+6. 拒绝接听
+
+   ```json
    {
        "eventName":"__reject",
        "data":{
@@ -103,11 +113,50 @@ Android访问地址为ws://ip:port/websocket
            "rejectType":"0/1"   //0 拒绝  1 busy  
        }
    }
-    ```
+   ```
 
    
 
+6. offer 和answer
 
+   ```json
+    {
+          "action":"__offer",
+          "data":{
+              "sdp":"sdp",
+              "userID":"userId"
+             }
+          } 
+      }
+   
+   
+    {
+          "action":"__answer",
+          "data":{
+              "sdp":"sdp",
+              "userID":"userId"
+             }
+          } 
+      }
+   
+   ```
+
+7. ice_candidate
+
+   ```
+    {
+          "action":"__ice_candidate",
+          "data":{
+              "socketID":"socketId",
+              "id":"sdpMid",
+              "label":"sdpMLineIndex信息",
+              "candidate":"sdp信息"
+          } 
+      }
+   
+   ```
+
+   
 
 
 

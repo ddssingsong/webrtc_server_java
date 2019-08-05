@@ -131,20 +131,23 @@ public class WebSocketServer {
             case "__ring":
                 ring(message, data.getData());
                 break;
+            case "__cancel":
+                cancel(message, data.getData());
+                break;
             case "__reject":
                 reject(message, data.getData());
                 break;
             case "__join":
-                join(message, data.getData(), session);
+                join(message, data.getData());
                 break;
             case "__ice_candidate":
-                iceCandidate(data.getData(), session);
+                iceCandidate(message, data.getData());
                 break;
             case "__offer":
-                offer(data.getData(), session);
+                offer(message, data.getData());
                 break;
             case "__answer":
-                answer(data.getData(), session);
+                answer(message, data.getData());
                 break;
             default:
                 break;
@@ -194,6 +197,19 @@ public class WebSocketServer {
         }
     }
 
+    // 取消拨出
+    private void cancel(String message, Map<String, Object> data) {
+        String userList = (String) data.get("userList");
+        String[] users = userList.split(",");
+        for (String userId : users) {
+            UserBean userBean = MemCons.userBeans.get(userId);
+            if (userBean != null) {
+                sendMsg(userBean, -1, message);
+            }
+        }
+
+
+    }
 
     //拒绝接听
     private void reject(String message, Map<String, Object> data) {
@@ -205,7 +221,7 @@ public class WebSocketServer {
     }
 
     // 同意接听
-    private void join(String message, Map<String, Object> data, Session session) {
+    private void join(String message, Map<String, Object> data) {
 
         String room = (String) data.get("room");
         String userID = (String) data.get("userID");
@@ -233,7 +249,7 @@ public class WebSocketServer {
             cons[i] = userBean.getUserId();
         }
         map.put("connections", cons);
-        map.put("you", session.getId());
+        map.put("you", userID);
         send.setData(map);
         sendMsg(my, -1, gson.toJson(send));
 
@@ -249,56 +265,26 @@ public class WebSocketServer {
 
     }
 
-    private void iceCandidate(Map<String, Object> data, Session socket) {
-//        //soc=this
-//        Session session = getSocket(data.get("socketId").toString());
-//        if (session == null) {
-//            return;
-//        }
-//        EventData send = new EventData();
-//        send.setEventName("_ice_candidate");
-//        data.put("id", data.get("id"));
-//        data.put("label", data.get("label"));
-//        data.put("candidate", data.get("candidate"));
-//        data.put("socketId", socket.getId());
-//        send.setData(data);
-//        session.getAsyncRemote().sendText(gson.toJson(send));
-//
-//        System.out.println("接收到来自" + socket.getId() + "的ICE Candidate");
+    // 发送offer
+    private void offer(String message, Map<String, Object> data) {
+        String userId = (String) data.get("userID");
+        UserBean userBean = MemCons.userBeans.get(userId);
+        sendMsg(userBean, -1, message);
     }
 
-    private void offer(Map<String, Object> data, Session socket) {
-//        Session session = getSocket(data.get("socketId").toString());
-//        if (session == null) {
-//            return;
-//        }
-//        EventData send = new EventData();
-//        send.setEventName("_offer");
-//
-//        Map<String, Object> map = data;
-//        map.put("sdp", data.get("sdp"));
-//        map.put("socketId", socket.getId());
-//        send.setData(map);
-//        session.getAsyncRemote().sendText(gson.toJson(send));
-//
-//        System.out.println("接收到来自" + socket.getId() + "的Offer");
+    // 发送answer
+    private void answer(String message, Map<String, Object> data) {
+        String userId = (String) data.get("userID");
+        UserBean userBean = MemCons.userBeans.get(userId);
+        sendMsg(userBean, -1, message);
 
     }
 
-    private void answer(Map<String, Object> data, Session socket) {
-//        Session session = getSocket(data.get("socketId").toString());
-//        if (session == null) {
-//            return;
-//        }
-//        EventData send = new EventData();
-//        send.setEventName("_answer");
-//        data.put("sdp", data.get("sdp"));
-//        data.put("socketId", socket.getId());
-//        send.setData(data);
-//        session.getAsyncRemote().sendText(gson.toJson(send));
-//
-//        System.out.println("接收到来自" + socket.getId() + "的Answer");
-
+    // 发送ice信息
+    private void iceCandidate(String message, Map<String, Object> data) {
+        String userId = (String) data.get("userID");
+        UserBean userBean = MemCons.userBeans.get(userId);
+        sendMsg(userBean, -1, message);
     }
 
 
