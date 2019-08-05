@@ -64,7 +64,23 @@ Android访问地址为ws://ip:port/websocket
 
 4. 加入房间
 
-  ```
+  ```json
+  {
+      "eventName":"__join",
+      "data":{
+          "room":"room",
+          "userID":"myId"
+      }
+  }
+  
+  {
+      "eventName":"__peers",
+      "data":{
+          "connections":[],
+          "userID":"myId"
+      }
+  }
+  
   
   ```
   
