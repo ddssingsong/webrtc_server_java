@@ -155,7 +155,6 @@ public class WebSocketServer {
 
     }
 
-
     // 首次邀请
     private void invite(String message, Map<String, Object> data) {
         String userList = (String) data.get("userList");
@@ -286,7 +285,6 @@ public class WebSocketServer {
         UserBean userBean = MemCons.userBeans.get(userId);
         sendMsg(userBean, -1, message);
     }
-
 
     // 给不同设备发送消息
     private void sendMsg(UserBean userBean, int device, String str) {
