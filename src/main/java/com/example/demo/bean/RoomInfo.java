@@ -3,9 +3,10 @@ package com.example.demo.bean;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class RoomInfo {
+    // 房间里的人
     private CopyOnWriteArrayList<UserBean> userBeans;
+    // 房间大小
     private int maxSize;
-    private int mediaType;
 
     public RoomInfo() {
     }
@@ -13,7 +14,6 @@ public class RoomInfo {
     public RoomInfo(CopyOnWriteArrayList<UserBean> userBeans, int maxSize, int mediaType) {
         this.userBeans = userBeans;
         this.maxSize = maxSize;
-        this.mediaType = mediaType;
     }
 
     public CopyOnWriteArrayList<UserBean> getUserBeans() {
@@ -32,11 +32,5 @@ public class RoomInfo {
         this.maxSize = maxSize;
     }
 
-    public int getMediaType() {
-        return mediaType;
-    }
 
-    public void setMediaType(int mediaType) {
-        this.mediaType = mediaType;
-    }
 }

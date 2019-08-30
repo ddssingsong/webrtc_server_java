@@ -92,7 +92,7 @@ Android访问地址为ws://ip:port/websocket
   {
       "eventName":"__peers",
       "data":{
-          "connections":[],
+          "connections":"userId,userId",
           "userID":"myId"
       }
   }
@@ -121,7 +121,7 @@ Android访问地址为ws://ip:port/websocket
 
    ```json
     {
-          "action":"__offer",
+              "action":"__offer",
           "data":{
               "sdp":"sdp",
               "userID":"userId"
@@ -147,7 +147,7 @@ Android访问地址为ws://ip:port/websocket
     {
           "action":"__ice_candidate",
           "data":{
-              "socketID":"socketId",
+              "userID":"userId"
               "id":"sdpMid",
               "label":"sdpMLineIndex信息",
               "candidate":"sdp信息"

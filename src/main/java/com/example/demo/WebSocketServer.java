@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.example.demo.MemCons.rooms;
+
 @ServerEndpoint("/ws/{userId}/{device}")
 @Component
 public class WebSocketServer {
@@ -125,6 +127,9 @@ public class WebSocketServer {
             return;
         }
         switch (data.getEventName()) {
+            case "__create":
+                createRoom(message, data.getData());
+                break;
             case "__invite":
                 invite(message, data.getData());
                 break;
@@ -155,26 +160,35 @@ public class WebSocketServer {
 
     }
 
+
+    // 创建房间
+    private void createRoom(String message, Map<String, Object> data) {
+        String room = (String) data.get("room");
+        String userId = (String) data.get("userID");
+        RoomInfo roomParam = rooms.get(room);
+        // 没有这个房间
+        if (roomParam == null) {
+            int size = (int) data.getOrDefault("roomSize", 2);
+            // 创建房间
+            RoomInfo roomInfo = new RoomInfo();
+            roomInfo.setMaxSize(size);
+
+            CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
+            // 将自己加入到房间里
+            UserBean my = MemCons.userBeans.get(userId);
+            copy.add(my);
+            roomInfo.setUserBeans(copy);
+
+            // 将房间储存起来
+            rooms.put(room, roomInfo);
+        }
+
+    }
+
     // 首次邀请
     private void invite(String message, Map<String, Object> data) {
         String userList = (String) data.get("userList");
         String[] users = userList.split(",");
-        String inviteId = (String) data.get("inviteID");
-        int size = (int) data.getOrDefault("roomSize", 2);
-        int mediaType = (int) data.getOrDefault("mediaType", 1);
-        String room = data.get("room") == null ? UUID.randomUUID().toString() : data.get("room").toString();
-
-        // 创建房间
-        RoomInfo roomInfo = new RoomInfo();
-        roomInfo.setMaxSize(size);
-        roomInfo.setMediaType(mediaType);
-        CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
-        // 将自己加入到房间里
-        UserBean my = MemCons.userBeans.get(inviteId);
-        copy.add(my);
-        roomInfo.setUserBeans(copy);
-        // 将房间储存起来
-        MemCons.rooms.put(room, roomInfo);
 
         // 给其他人发送邀请
         for (String user : users) {
@@ -189,7 +203,7 @@ public class WebSocketServer {
 
     // 响铃回复
     private void ring(String message, Map<String, Object> data) {
-        String inviteId = (String) data.get("inviteID");
+        String inviteId = (String) data.get("toID");
         UserBean userBean = MemCons.userBeans.get(inviteId);
         if (userBean != null) {
             sendMsg(userBean, -1, message);
@@ -210,7 +224,7 @@ public class WebSocketServer {
 
     }
 
-    //拒绝接听
+    // 拒绝接听
     private void reject(String message, Map<String, Object> data) {
         String inviteId = (String) data.get("inviteID");
         UserBean userBean = MemCons.userBeans.get(inviteId);
@@ -219,13 +233,13 @@ public class WebSocketServer {
         }
     }
 
-    // 同意接听
+    // 加入房间
     private void join(String message, Map<String, Object> data) {
 
         String room = (String) data.get("room");
         String userID = (String) data.get("userID");
 
-        RoomInfo roomInfo = MemCons.rooms.get(room);
+        RoomInfo roomInfo = rooms.get(room);
         CopyOnWriteArrayList<UserBean> roomUserBeans = roomInfo.getUserBeans();
         UserBean my = MemCons.userBeans.get(userID);
 
@@ -233,7 +247,7 @@ public class WebSocketServer {
         // 1. 將我加入到房间
         roomUserBeans.add(my);
         roomInfo.setUserBeans(roomUserBeans);
-        MemCons.rooms.put(room, roomInfo);
+        rooms.put(room, roomInfo);
 
         // 2. 返回房间里的所有人信息
         EventData send = new EventData();
