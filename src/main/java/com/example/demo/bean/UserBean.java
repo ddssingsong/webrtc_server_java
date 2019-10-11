@@ -21,10 +21,12 @@ public class UserBean {
     }
 
     public Session getPhoneSession() {
+        if (sessions[0] == null) return null;
         return sessions[0].getSession();
     }
 
     public Session getPcSession() {
+        if (sessions[1] == null) return null;
         return sessions[1].getSession();
     }
 

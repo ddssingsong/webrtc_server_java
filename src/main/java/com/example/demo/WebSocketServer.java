@@ -19,6 +19,7 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -154,12 +155,14 @@ public class WebSocketServer {
             case "__answer":
                 answer(message, data.getData());
                 break;
+            case "__leave":
+                leave(message, data.getData());
+                break;
             default:
                 break;
         }
 
     }
-
 
     // 创建房间
     private void createRoom(String message, Map<String, Object> data) {
@@ -168,7 +171,7 @@ public class WebSocketServer {
         RoomInfo roomParam = rooms.get(room);
         // 没有这个房间
         if (roomParam == null) {
-            int size = (int) data.getOrDefault("roomSize", 2);
+            int size = (int) Double.parseDouble(String.valueOf(data.get("roomSize")));
             // 创建房间
             RoomInfo roomInfo = new RoomInfo();
             roomInfo.setMaxSize(size);
@@ -181,6 +184,14 @@ public class WebSocketServer {
 
             // 将房间储存起来
             rooms.put(room, roomInfo);
+
+            EventData send = new EventData();
+            send.setEventName("__peers");
+            Map<String, Object> map = new HashMap<>();
+            map.put("connections", "");
+            map.put("you", userId);
+            send.setData(map);
+            sendMsg(my, -1, gson.toJson(send));
         }
 
     }
@@ -226,8 +237,8 @@ public class WebSocketServer {
 
     // 拒绝接听
     private void reject(String message, Map<String, Object> data) {
-        String inviteId = (String) data.get("inviteID");
-        UserBean userBean = MemCons.userBeans.get(inviteId);
+        String toID = (String) data.get("toID");
+        UserBean userBean = MemCons.userBeans.get(toID);
         if (userBean != null) {
             sendMsg(userBean, -1, message);
         }
@@ -289,6 +300,10 @@ public class WebSocketServer {
     private void answer(String message, Map<String, Object> data) {
         String userId = (String) data.get("userID");
         UserBean userBean = MemCons.userBeans.get(userId);
+        if (userBean == null) {
+            System.out.println("用户 " + userId + " 不存在");
+            return;
+        }
         sendMsg(userBean, -1, message);
 
     }
@@ -297,7 +312,35 @@ public class WebSocketServer {
     private void iceCandidate(String message, Map<String, Object> data) {
         String userId = (String) data.get("userID");
         UserBean userBean = MemCons.userBeans.get(userId);
+        if (userBean == null) {
+            System.out.println("用户 " + userId + " 不存在");
+            return;
+        }
         sendMsg(userBean, -1, message);
+    }
+
+    // 离开房间
+    private void leave(String message, Map<String, Object> data) {
+        String room = (String) data.get("room");
+        String userId = (String) data.get("userID");
+        RoomInfo roomInfo = MemCons.rooms.get(room);
+        CopyOnWriteArrayList<UserBean> roomInfoUserBeans = roomInfo.getUserBeans();
+        Iterator<UserBean> iterator = roomInfoUserBeans.iterator();
+        while (iterator.hasNext()) {
+            UserBean userBean = iterator.next();
+            if (userId.equals(userBean.getUserId())) {
+                iterator.remove();
+                continue;
+            }
+            sendMsg(userBean, -1, message);
+
+            if (roomInfoUserBeans.size() == 1) {
+                System.out.println("房间里只剩下一个人");
+            }
+
+        }
+
+
     }
 
     // 给不同设备发送消息
