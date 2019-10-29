@@ -246,7 +246,6 @@ public class WebSocketServer {
 
     // 加入房间
     private void join(String message, Map<String, Object> data) {
-
         String room = (String) data.get("room");
         String userID = (String) data.get("userID");
 
@@ -264,6 +263,7 @@ public class WebSocketServer {
         EventData send = new EventData();
         send.setEventName("__peers");
         Map<String, Object> map = new HashMap<>();
+
         String[] cons = new String[roomUserBeans.size()];
         for (int i = 0; i < roomUserBeans.size(); i++) {
             UserBean userBean = roomUserBeans.get(i);
@@ -272,18 +272,34 @@ public class WebSocketServer {
             }
             cons[i] = userBean.getUserId();
         }
-        map.put("connections", cons);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cons.length; i++) {
+            if (cons[i] == null) {
+                continue;
+            }
+            sb.append(cons[i]).append(",");
+        }
+        if (sb.length() > 0) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        map.put("connections", sb.toString());
         map.put("you", userID);
         send.setData(map);
         sendMsg(my, -1, gson.toJson(send));
 
+
+        EventData newPeer = new EventData();
+        newPeer.setEventName("__new_peer");
+        Map<String, Object> sendMap = new HashMap<>();
+        sendMap.put("userID", userID);
+        newPeer.setData(sendMap);
 
         // 3. 给房间里的其他人发送消息
         for (UserBean userBean : roomUserBeans) {
             if (userBean.getUserId().equals(userID)) {
                 continue;
             }
-            sendMsg(userBean, -1, message);
+            sendMsg(userBean, -1, gson.toJson(newPeer));
         }
 
 
@@ -323,6 +339,7 @@ public class WebSocketServer {
     private void leave(String message, Map<String, Object> data) {
         String room = (String) data.get("room");
         String userId = (String) data.get("userID");
+        if (userId == null) return;
         RoomInfo roomInfo = MemCons.rooms.get(room);
         CopyOnWriteArrayList<UserBean> roomInfoUserBeans = roomInfo.getUserBeans();
         Iterator<UserBean> iterator = roomInfoUserBeans.iterator();
