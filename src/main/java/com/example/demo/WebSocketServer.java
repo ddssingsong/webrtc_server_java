@@ -252,8 +252,6 @@ public class WebSocketServer {
         RoomInfo roomInfo = rooms.get(room);
         CopyOnWriteArrayList<UserBean> roomUserBeans = roomInfo.getUserBeans();
         UserBean my = MemCons.userBeans.get(userID);
-
-
         // 1. 將我加入到房间
         roomUserBeans.add(my);
         roomInfo.setUserBeans(roomUserBeans);
@@ -338,7 +336,7 @@ public class WebSocketServer {
     // 离开房间
     private void leave(String message, Map<String, Object> data) {
         String room = (String) data.get("room");
-        String userId = (String) data.get("userID");
+        String userId = (String) data.get("fromID");
         if (userId == null) return;
         RoomInfo roomInfo = MemCons.rooms.get(room);
         CopyOnWriteArrayList<UserBean> roomInfoUserBeans = roomInfo.getUserBeans();
@@ -346,7 +344,6 @@ public class WebSocketServer {
         while (iterator.hasNext()) {
             UserBean userBean = iterator.next();
             if (userId.equals(userBean.getUserId())) {
-                iterator.remove();
                 continue;
             }
             sendMsg(userBean, -1, message);
@@ -360,26 +357,37 @@ public class WebSocketServer {
 
     }
 
+
+    private static final Object object = new Object();
+
     // 给不同设备发送消息
     private void sendMsg(UserBean userBean, int device, String str) {
         if (device == 0) {
             Session phoneSession = userBean.getPhoneSession();
             if (phoneSession != null) {
-                phoneSession.getAsyncRemote().sendText(str);
+                synchronized (object) {
+                    phoneSession.getAsyncRemote().sendText(str);
+                }
             }
         } else if (device == 1) {
             Session pcSession = userBean.getPcSession();
             if (pcSession != null) {
-                pcSession.getAsyncRemote().sendText(str);
+                synchronized (object) {
+                    pcSession.getAsyncRemote().sendText(str);
+                }
             }
         } else {
             Session phoneSession = userBean.getPhoneSession();
             if (phoneSession != null) {
-                phoneSession.getAsyncRemote().sendText(str);
+                synchronized (object) {
+                    phoneSession.getAsyncRemote().sendText(str);
+                }
             }
             Session pcSession = userBean.getPcSession();
             if (pcSession != null) {
-                pcSession.getAsyncRemote().sendText(str);
+                synchronized (object) {
+                    pcSession.getAsyncRemote().sendText(str);
+                }
             }
 
         }
