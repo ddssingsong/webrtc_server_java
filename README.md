@@ -1,15 +1,22 @@
 
 ## Override
 
-只支持http
+配合
+https://github.com/ddssingsong/webrtc_android
+使用的一套服务器java版本
+
+实现基本的信令收发，配合Android端实现基本的呼叫、响铃、挂断、语音通话、视频通话的功能
+
 
 访问Android访问地址为ws://ip:port/websocket
 
 
-## 分支master 
+## 分支介绍
 
-可以运行的业务
+*master*
 
-## 分支dev 
+配合Android端Java版本业务逻辑，实现基本的呼叫、响铃、语音通话、视频通话的功能
 
-重构业务
+*nodejs_copy*
+
+将nodejs版本https://github.com/ddssingsong/webrtc_server_node 使用java写了一遍
