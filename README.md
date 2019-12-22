@@ -10,12 +10,19 @@ https://github.com/ddssingsong/webrtc_android
 
 Android访问地址为ws://ip:port/websocket
 
-## 分支-master
-可以运行的demo
+## 分支介绍
 
-## 分支-dev
+*master*
 
-**信令设计**
+配合Android端Java版本业务逻辑，实现基本的呼叫、响铃、语音通话、视频通话的功能
+
+*nodejs_copy*
+
+将nodejs版本https://github.com/ddssingsong/webrtc_server_node 使用java写了一遍
+
+
+## 信令相关
+
 
 1. 登录成功，返回个人信息，用来显示用户的在线状态
 
@@ -80,88 +87,8 @@ Android访问地址为ws://ip:port/websocket
    }
    ```
 
-   
-
-5. 加入房间
-
-  ```json
-  {
-      "eventName":"__join",
-      "data":{
-          "room":"room",
-          "userID":"myId"
-      }
-  }
   
-  返回信息
-  {
-      "eventName":"__peers",
-      "data":{
-          "connections":"userId,userId",
-          "userID":"myId"
-      }
-  }
-  
-  
-  ```
-
-  
-
-6. 拒绝接听
-
-   ```json
-   {
-       "eventName":"__reject",
-       "data":{
-           "inviteID":"userId",
-           "fromID":"myId",
-           "rejectType":"0/1"   //0 拒绝  1 busy  
-       }
-   }
-   ```
-
-   
-
-6. offer 和answer
-
-   ```json
-    {
-              "action":"__offer",
-          "data":{
-              "sdp":"sdp",
-              "userID":"userId"
-             }
-          } 
-      }
-   
-   
-    {
-          "action":"__answer",
-          "data":{
-              "sdp":"sdp",
-              "userID":"userId"
-             }
-          } 
-      }
-   
-   ```
-
-7. ice_candidate
-
-   ```
-    {
-          "action":"__ice_candidate",
-          "data":{
-              "userID":"userId"
-              "id":"sdpMid",
-              "label":"sdpMLineIndex信息",
-              "candidate":"sdp信息"
-          } 
-      }
-   
-   ```
-
-   
+    
 
 
 
@@ -192,14 +119,3 @@ Android访问地址为ws://ip:port/websocket
 
 
 
-
-
-## 分支介绍
-
-*master*
-
-配合Android端Java版本业务逻辑，实现基本的呼叫、响铃、语音通话、视频通话的功能
-
-*nodejs_copy*
-
-将nodejs版本https://github.com/ddssingsong/webrtc_server_node 使用java写了一遍
