@@ -158,6 +158,9 @@ public class WebSocketServer {
             case "__leave":
                 leave(message, data.getData());
                 break;
+            case "__audio":
+                transAudio(message, data.getData());
+                break;
             default:
                 break;
         }
@@ -301,6 +304,17 @@ public class WebSocketServer {
         }
 
 
+    }
+
+    // 切换到语音接听
+    private void transAudio(String message, Map<String, Object> data) {
+        String userId = (String) data.get("userID");
+        UserBean userBean = MemCons.userBeans.get(userId);
+        if (userBean == null) {
+            System.out.println("用户 " + userId + " 不存在");
+            return;
+        }
+        sendMsg(userBean, -1, message);
     }
 
     // 发送offer
