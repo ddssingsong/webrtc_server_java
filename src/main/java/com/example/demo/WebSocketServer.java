@@ -35,7 +35,7 @@ public class WebSocketServer {
     private String userId;
     private int device;
     private static Gson gson = new Gson();
-    private static String avatar = "http://img.xinxic.com/img/abec871cbeac880b.jpg";
+    private static String avatar = "111";
 
 
     // 用户userId登录进来
