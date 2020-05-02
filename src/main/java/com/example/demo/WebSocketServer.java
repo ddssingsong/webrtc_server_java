@@ -31,9 +31,7 @@ import static com.example.demo.MemCons.rooms;
 public class WebSocketServer {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketServer.class);
 
-    private Session session;
     private String userId;
-    private int device;
     private static Gson gson = new Gson();
     private static String avatar = "p1.jpeg";
 
@@ -41,8 +39,6 @@ public class WebSocketServer {
     // 用户userId登录进来
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userId, @PathParam("device") String de) {
-        System.out.println("onOpen......");
-
         int device = Integer.parseInt(de);
         UserBean userBean = MemCons.userBeans.get(userId);
         if (userBean == null) {
@@ -50,13 +46,13 @@ public class WebSocketServer {
         }
         if (device == 0) {
             userBean.setPhoneSession(session, device);
+            userBean.setPhone(true);
             LOG.info("Phone用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
         } else {
             userBean.setPcSession(session, device);
+            userBean.setPhone(false);
             LOG.info("PC用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
         }
-        this.device = device;
-        this.session = session;
         this.userId = userId;
 
         //加入列表
@@ -69,7 +65,7 @@ public class WebSocketServer {
         map.put("userID", userId);
         map.put("avatar", avatar);
         send.setData(map);
-        this.session.getAsyncRemote().sendText(gson.toJson(send));
+        session.getAsyncRemote().sendText(gson.toJson(send));
 
 
     }
@@ -77,38 +73,36 @@ public class WebSocketServer {
     // 用户下线
     @OnClose
     public void onClose() {
-        System.out.println("onClose......");
+        System.out.println(userId + "-->onClose......");
         // 根据用户名查出房间,
         UserBean userBean = MemCons.userBeans.get(userId);
         if (userBean != null) {
-            DeviceSession[] sessions = userBean.getSessions();
-            if (device == 0) {
-                try {
-                    sessions[0].getSession().close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            if (userBean.isPhone()) {
+                Session phoneSession = userBean.getPhoneSession();
+                if (phoneSession != null) {
+                    try {
+                        phoneSession.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    userBean.setPhoneSession(null, 0);
+                    MemCons.userBeans.remove(userId);
                 }
-                sessions[0] = null;
-                userBean.setSessions(sessions);
-                MemCons.userBeans.put(userId, userBean);
                 LOG.info("Phone用户离开:" + userBean.getUserId());
             } else {
-
-                try {
-                    sessions[1].getSession().close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                Session pcSession = userBean.getPcSession();
+                if (pcSession != null) {
+                    try {
+                        pcSession.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    userBean.setPcSession(null, 0);
+                    MemCons.userBeans.remove(userId);
+                    LOG.info("PC用户离开:" + userBean.getUserId());
                 }
-                sessions[1] = null;
-                userBean.setSessions(sessions);
-                MemCons.userBeans.put(userId, userBean);
-                LOG.info("PC用户离开:" + userBean.getUserId());
-            }
-            if (sessions[0] == null && sessions[1] == null) {
-                MemCons.userBeans.remove(userId);
             }
         }
-
 
     }
 
@@ -174,6 +168,9 @@ public class WebSocketServer {
     private void createRoom(String message, Map<String, Object> data) {
         String room = (String) data.get("room");
         String userId = (String) data.get("userID");
+
+        System.out.println(String.format("createRoom:%s ", room));
+
         RoomInfo roomParam = rooms.get(room);
         // 没有这个房间
         if (roomParam == null) {
@@ -181,23 +178,25 @@ public class WebSocketServer {
             // 创建房间
             RoomInfo roomInfo = new RoomInfo();
             roomInfo.setMaxSize(size);
-
-            CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
-            // 将自己加入到房间里
-            UserBean my = MemCons.userBeans.get(userId);
-            copy.add(my);
-            roomInfo.setUserBeans(copy);
-
+            roomInfo.setRoomId(room);
+            roomInfo.setUserId(userId);
             // 将房间储存起来
             rooms.put(room, roomInfo);
+            if (size == 2) {
+                CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
+                // 将自己加入到房间里
+                UserBean my = MemCons.userBeans.get(userId);
+                copy.add(my);
+                rooms.get(room).setUserBeans(copy);
+                EventData send = new EventData();
+                send.setEventName("__peers");
+                Map<String, Object> map = new HashMap<>();
+                map.put("connections", "");
+                map.put("you", userId);
+                send.setData(map);
+                sendMsg(my, -1, gson.toJson(send));
+            }
 
-            EventData send = new EventData();
-            send.setEventName("__peers");
-            Map<String, Object> map = new HashMap<>();
-            map.put("connections", "");
-            map.put("you", userId);
-            send.setData(map);
-            sendMsg(my, -1, gson.toJson(send));
         }
 
     }
@@ -205,8 +204,12 @@ public class WebSocketServer {
     // 首次邀请
     private void invite(String message, Map<String, Object> data) {
         String userList = (String) data.get("userList");
+        String room = (String) data.get("room");
+        String inviteId = (String) data.get("inviteID");
+        boolean audioOnly = (boolean) data.get("audioOnly");
         String[] users = userList.split(",");
 
+        System.out.println(String.format("room:%s,%s invite %s audioOnly:%b", room, inviteId, userList, audioOnly));
         // 给其他人发送邀请
         for (String user : users) {
             UserBean userBean = MemCons.userBeans.get(user);
@@ -220,7 +223,9 @@ public class WebSocketServer {
 
     // 响铃回复
     private void ring(String message, Map<String, Object> data) {
+        String room = (String) data.get("room");
         String inviteId = (String) data.get("toID");
+
         UserBean userBean = MemCons.userBeans.get(inviteId);
         if (userBean != null) {
             sendMsg(userBean, -1, message);
@@ -229,6 +234,7 @@ public class WebSocketServer {
 
     // 取消拨出
     private void cancel(String message, Map<String, Object> data) {
+        String room = (String) data.get("room");
         String userList = (String) data.get("userList");
         String[] users = userList.split(",");
         for (String userId : users) {
@@ -238,16 +244,29 @@ public class WebSocketServer {
             }
         }
 
+        if (MemCons.rooms.get(room) != null) {
+            MemCons.rooms.remove(room);
+        }
+
 
     }
 
     // 拒绝接听
     private void reject(String message, Map<String, Object> data) {
+        String room = (String) data.get("room");
         String toID = (String) data.get("toID");
         UserBean userBean = MemCons.userBeans.get(toID);
         if (userBean != null) {
             sendMsg(userBean, -1, message);
         }
+        RoomInfo roomInfo = MemCons.rooms.get(room);
+        if (roomInfo != null) {
+            if (roomInfo.getMaxSize() == 2) {
+                MemCons.rooms.remove(room);
+            }
+        }
+
+
     }
 
     // 加入房间
@@ -256,7 +275,14 @@ public class WebSocketServer {
         String userID = (String) data.get("userID");
 
         RoomInfo roomInfo = rooms.get(room);
+
+        int maxSize = roomInfo.getMaxSize();
         CopyOnWriteArrayList<UserBean> roomUserBeans = roomInfo.getUserBeans();
+
+        //房间已经满了
+        if (roomUserBeans.size() >= maxSize) {
+            return;
+        }
         UserBean my = MemCons.userBeans.get(userID);
         // 1. 將我加入到房间
         roomUserBeans.add(my);
@@ -378,8 +404,15 @@ public class WebSocketServer {
 
             if (roomInfoUserBeans.size() == 1) {
                 System.out.println("房间里只剩下一个人");
+                if (roomInfo.getMaxSize() == 2) {
+                    MemCons.rooms.remove(room);
+                }
             }
 
+            if (roomInfoUserBeans.size() == 0) {
+                System.out.println("房间无人");
+                MemCons.rooms.remove(room);
+            }
         }
 
 

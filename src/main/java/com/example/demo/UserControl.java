@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 @RestController
 public class UserControl {
@@ -19,10 +20,18 @@ public class UserControl {
         return "welcome to my webRTC demo";
     }
 
+
     @RequestMapping("/roomList")
-    public List<String> roomList() {
+    public List<RoomInfo> roomList() {
         ConcurrentHashMap<String, RoomInfo> rooms = MemCons.rooms;
-        return new ArrayList<>(rooms.keySet());
+        Collection<RoomInfo> values = rooms.values();
+        ArrayList<RoomInfo> objects = new ArrayList<>();
+        values.forEach(roomInfo -> {
+            if (roomInfo.getMaxSize() > 2) {
+                objects.add(roomInfo);
+            }
+        });
+        return objects;
     }
 
     @RequestMapping("/userList")

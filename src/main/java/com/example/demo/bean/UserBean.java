@@ -11,8 +11,12 @@ public class UserBean {
     private String userId;
     @JsonFormat
     private String avatar;
-    @JsonIgnore
-    private DeviceSession[] sessions = new DeviceSession[2];
+
+    private boolean isPhone;
+
+    private DeviceSession pcSession;
+    private DeviceSession phoneSession;
+
 
     public UserBean(String userId, String avatar) {
         this.userId = userId;
@@ -21,24 +25,30 @@ public class UserBean {
 
     @JsonIgnore
     public void setPhoneSession(Session session, int device) {
-        this.sessions[0] = new DeviceSession(session, device);
+        if (session == null) {
+            this.phoneSession = null;
+            return;
+        }
+        this.phoneSession = new DeviceSession(session, device);
     }
 
     @JsonIgnore
     public void setPcSession(Session session, int device) {
-        this.sessions[1] = new DeviceSession(session, device);
+        if (session == null) {
+            this.pcSession = null;
+            return;
+        }
+        this.pcSession = new DeviceSession(session, device);
     }
 
     @JsonIgnore
     public Session getPhoneSession() {
-        if (sessions[0] == null) return null;
-        return sessions[0].getSession();
+        return phoneSession == null ? null : phoneSession.getSession();
     }
 
     @JsonIgnore
     public Session getPcSession() {
-        if (sessions[1] == null) return null;
-        return sessions[1].getSession();
+        return pcSession == null ? null : pcSession.getSession();
     }
 
     @JsonIgnore
@@ -77,13 +87,11 @@ public class UserBean {
         return this.userId.equals(user.getUserId());
     }
 
-    @JsonIgnore
-    public DeviceSession[] getSessions() {
-        return sessions;
+    public boolean isPhone() {
+        return isPhone;
     }
 
-    @JsonIgnore
-    public void setSessions(DeviceSession[] sessions) {
-        this.sessions = sessions;
+    public void setPhone(boolean phone) {
+        isPhone = phone;
     }
 }
