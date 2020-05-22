@@ -194,6 +194,7 @@ public class WebSocketServer {
                 map.put("connections", "");
                 map.put("you", userId);
                 send.setData(map);
+                System.out.println(gson.toJson(send));
                 sendMsg(my, -1, gson.toJson(send));
             }
 
