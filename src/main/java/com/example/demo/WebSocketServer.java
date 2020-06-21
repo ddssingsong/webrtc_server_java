@@ -182,21 +182,22 @@ public class WebSocketServer {
             roomInfo.setUserId(userId);
             // 将房间储存起来
             rooms.put(room, roomInfo);
-            if (size == 2) {
-                CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
-                // 将自己加入到房间里
-                UserBean my = MemCons.userBeans.get(userId);
-                copy.add(my);
-                rooms.get(room).setUserBeans(copy);
-                EventData send = new EventData();
-                send.setEventName("__peers");
-                Map<String, Object> map = new HashMap<>();
-                map.put("connections", "");
-                map.put("you", userId);
-                send.setData(map);
-                System.out.println(gson.toJson(send));
-                sendMsg(my, -1, gson.toJson(send));
-            }
+
+
+            CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
+            // 将自己加入到房间里
+            UserBean my = MemCons.userBeans.get(userId);
+            copy.add(my);
+            rooms.get(room).setUserBeans(copy);
+            EventData send = new EventData();
+            send.setEventName("__peers");
+            Map<String, Object> map = new HashMap<>();
+            map.put("connections", "");
+            map.put("you", userId);
+            map.put("roomSize", size);
+            send.setData(map);
+            System.out.println(gson.toJson(send));
+            sendMsg(my, -1, gson.toJson(send));
 
         }
 
