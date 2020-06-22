@@ -316,6 +316,7 @@ public class WebSocketServer {
         }
         map.put("connections", sb.toString());
         map.put("you", userID);
+        map.put("roomSize", roomInfo.getMaxSize());
         send.setData(map);
         sendMsg(my, -1, gson.toJson(send));
 
