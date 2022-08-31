@@ -189,6 +189,8 @@ public class WebSocketServer {
             UserBean my = MemCons.userBeans.get(userId);
             copy.add(my);
             rooms.get(room).setUserBeans(copy);
+
+            // 发送给自己
             EventData send = new EventData();
             send.setEventName("__peers");
             Map<String, Object> map = new HashMap<>();
@@ -314,6 +316,8 @@ public class WebSocketServer {
         if (sb.length() > 0) {
             sb.deleteCharAt(sb.length() - 1);
         }
+
+        // 给自己发送消息
         map.put("connections", sb.toString());
         map.put("you", userID);
         map.put("roomSize", roomInfo.getMaxSize());
@@ -321,13 +325,12 @@ public class WebSocketServer {
         sendMsg(my, -1, gson.toJson(send));
 
 
+        // 3. 给房间里的其他人发送消息
         EventData newPeer = new EventData();
         newPeer.setEventName("__new_peer");
         Map<String, Object> sendMap = new HashMap<>();
         sendMap.put("userID", userID);
         newPeer.setData(sendMap);
-
-        // 3. 给房间里的其他人发送消息
         for (UserBean userBean : roomUserBeans) {
             if (userBean.getUserId().equals(userID)) {
                 continue;
@@ -395,27 +398,32 @@ public class WebSocketServer {
         String room = (String) data.get("room");
         String userId = (String) data.get("fromID");
         if (userId == null) return;
+        // 获取房间信息
         RoomInfo roomInfo = MemCons.rooms.get(room);
+        // 获取房间里面用户列表
         CopyOnWriteArrayList<UserBean> roomInfoUserBeans = roomInfo.getUserBeans();
-        Iterator<UserBean> iterator = roomInfoUserBeans.iterator();
-        while (iterator.hasNext()) {
-            UserBean userBean = iterator.next();
+        // 给房间其他人发送离开的消息
+        for (UserBean userBean : roomInfoUserBeans) {
+            // 排除自己
             if (userId.equals(userBean.getUserId())) {
+                roomInfoUserBeans.remove(userBean);
                 continue;
             }
+            // 发送消息
             sendMsg(userBean, -1, message);
+        }
 
-            if (roomInfoUserBeans.size() == 1) {
-                System.out.println("房间里只剩下一个人");
-                if (roomInfo.getMaxSize() == 2) {
-                    MemCons.rooms.remove(room);
-                }
-            }
 
-            if (roomInfoUserBeans.size() == 0) {
-                System.out.println("房间无人");
+        if (roomInfoUserBeans.size() == 1) {
+            System.out.println("房间里只剩下一个人");
+            if (roomInfo.getMaxSize() == 2) {
                 MemCons.rooms.remove(room);
             }
+        }
+
+        if (roomInfoUserBeans.size() == 0) {
+            System.out.println("房间无人");
+            MemCons.rooms.remove(room);
         }
 
 
