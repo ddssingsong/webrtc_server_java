@@ -450,9 +450,27 @@ public class WebSocketServer {
             }
         } else {
             Session phoneSession = userBean.getPhoneSession();
-            if (phoneSession != null) {
-                synchronized (object) {
-                    phoneSession.getAsyncRemote().sendText(str);
+            boolean sent = false;
+            boolean exception = false;
+            while(!sent) {
+                if (phoneSession != null) {
+                    synchronized (object) {
+                        try {
+                            phoneSession.getAsyncRemote().sendText(str);
+                            sent = true;
+                            exception = false;
+                        } catch (IllegalStateException error){
+                            System.out.println("TEST--TEST:" + error);
+                            exception = true;
+                        }
+                    }
+                    if(exception) {
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 }
             }
             Session pcSession = userBean.getPcSession();
